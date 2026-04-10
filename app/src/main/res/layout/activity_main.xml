@@ -1,229 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:orientation="vertical">
 
-    <LinearLayout
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:menu="@menu/menu_main"
+        app:title="@string/app_name" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_pause"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp">
 
-        <!-- Header -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/main_title"
-            android:textAppearance="?attr/textAppearanceHeadlineMedium"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            android:text="@string/main_subtitle"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:alpha="0.7" />
-
-        <!-- Service status card -->
-        <com.google.android.material.card.MaterialCardView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="12dp">
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp">
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/section_status"
-                        android:textAppearance="?attr/textAppearanceTitleMedium" />
-
-                    <TextView
-                        android:id="@+id/tv_service_status"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/status_inactive"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:alpha="0.7" />
-                </LinearLayout>
-
-                <!-- Read-only switch; tapping navigates to Accessibility Settings -->
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/switch_service"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:clickable="false"
-                    android:focusable="false" />
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Section label -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp"
-            android:text="@string/section_setup"
-            android:textAppearance="?attr/textAppearanceLabelLarge"
-            android:alpha="0.6" />
-
-        <!-- Accessibility permission card -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/tv_pause_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/label_service"
+                    android:text="@string/label_protection_active"
                     android:textAppearance="?attr/textAppearanceTitleMedium" />
 
                 <TextView
+                    android:id="@+id/tv_pause_subtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
-                    android:text="@string/desc_service"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:alpha="0.7" />
-
-                <TextView
-                    android:id="@+id/tv_accessibility_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:text="@string/status_inactive"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_accessibility_settings"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/btn_accessibility_settings"
-                    app:strokeWidth="1dp"
-                    style="@style/Widget.Material3.Button.OutlinedButton" />
+                    android:alpha="0.7"
+                    android:text="@string/desc_protection_active"
+                    android:textAppearance="?attr/textAppearanceBodySmall" />
 
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
 
-        <!-- Overlay permission card -->
-        <com.google.android.material.card.MaterialCardView
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switch_pause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginVertical="6dp"
+        android:hint="@string/hint_search_apps">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_search"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="12dp">
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:maxLines="1" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+    </com.google.android.material.textfield.TextInputLayout>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/label_overlay"
-                    android:textAppearance="?attr/textAppearanceTitleMedium" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="2dp"
+        android:alpha="0.6"
+        android:text="@string/section_installed_apps"
+        android:textAppearance="?attr/textAppearanceLabelMedium" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
-                    android:text="@string/desc_overlay"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:alpha="0.7" />
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_apps"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp" />
 
-                <TextView
-                    android:id="@+id/tv_overlay_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:text="@string/status_not_granted"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_overlay_settings"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/btn_overlay_settings"
-                    style="@style/Widget.Material3.Button.OutlinedButton" />
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Usage Access card -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/label_usage"
-                    android:textAppearance="?attr/textAppearanceTitleMedium" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
-                    android:text="@string/desc_usage"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:alpha="0.7" />
-
-                <TextView
-                    android:id="@+id/tv_usage_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:text="@string/status_not_granted"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_usage_settings"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/btn_usage_settings"
-                    style="@style/Widget.Material3.Button.OutlinedButton" />
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-    </LinearLayout>
-</ScrollView>
+</LinearLayout>
