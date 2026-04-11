@@ -48,7 +48,7 @@ class MainActivity : AppCompatActivity() {
         prefs = AppPreferences.getInstance(this)
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
-        setSupportActionBar(toolbar)
+        toolbar.inflateMenu(R.menu.menu_main)
         toolbar.setOnMenuItemClickListener { item ->
             if (item.itemId == R.id.action_settings) {
                 startActivity(Intent(this, SettingsActivity::class.java))
