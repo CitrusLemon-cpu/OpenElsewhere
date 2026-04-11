@@ -1,26 +1,39 @@
 package com.example.openelsewhere
 
-import android.content.ComponentName
 import android.content.Intent
-import android.net.Uri
+import android.content.pm.ApplicationInfo
 import android.os.Bundle
-import android.provider.Settings
-import android.text.TextUtils
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.google.android.material.button.MaterialButton
+import androidx.core.widget.doAfterTextChanged
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.color.MaterialColors
 import com.google.android.material.switchmaterial.SwitchMaterial
+import com.google.android.material.textfield.TextInputEditText
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var switchService: SwitchMaterial
-    private lateinit var tvServiceStatus: TextView
-    private lateinit var tvAccessibilityStatus: TextView
-    private lateinit var tvOverlayStatus: TextView
-    private lateinit var tvUsageStatus: TextView
+    private lateinit var prefs: AppPreferences
+    private lateinit var adapter: AppListAdapter
+    private lateinit var switchPause: SwitchMaterial
+    private lateinit var tvPauseTitle: TextView
+    private lateinit var tvPauseSubtitle: TextView
+    private lateinit var cardPause: MaterialCardView
+    private lateinit var etSearch: TextInputEditText
+
+    private var allApps: List<AppListItem> = emptyList()
+    private var currentQuery: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,93 +41,148 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
             insets
         }
 
-        switchService = findViewById(R.id.switch_service)
-        tvServiceStatus = findViewById(R.id.tv_service_status)
-        tvAccessibilityStatus = findViewById(R.id.tv_accessibility_status)
-        tvOverlayStatus = findViewById(R.id.tv_overlay_status)
-        tvUsageStatus = findViewById(R.id.tv_usage_status)
+        prefs = AppPreferences.getInstance(this)
 
-        findViewById<MaterialButton>(R.id.btn_accessibility_settings).setOnClickListener {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        toolbar.setOnMenuItemClickListener { item ->
+            if (item.itemId == R.id.action_settings) {
+                startActivity(Intent(this, SettingsActivity::class.java))
+                true
+            } else {
+                false
+            }
         }
 
-        findViewById<MaterialButton>(R.id.btn_overlay_settings).setOnClickListener {
-            startActivity(
-                Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:$packageName")
-                )
-            )
+        cardPause = findViewById(R.id.card_pause)
+        switchPause = findViewById(R.id.switch_pause)
+        tvPauseTitle = findViewById(R.id.tv_pause_title)
+        tvPauseSubtitle = findViewById(R.id.tv_pause_subtitle)
+        etSearch = findViewById(R.id.et_search)
+
+        switchPause.isChecked = !prefs.isPaused
+        updatePauseCard(prefs.isPaused)
+        switchPause.setOnCheckedChangeListener { _, isChecked ->
+            prefs.isPaused = !isChecked
+            updatePauseCard(!isChecked)
         }
 
-        findViewById<MaterialButton>(R.id.btn_usage_settings).setOnClickListener {
-            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        adapter = AppListAdapter(
+            onWatchToggled = { packageName, isWatched ->
+                prefs.setWatched(packageName, isWatched)
+                allApps = allApps.map { app ->
+                    if (app.packageName == packageName) app.copy(isWatched = isWatched) else app
+                }
+                filterAndSubmit(currentQuery)
+            },
+            onItemClicked = { item ->
+                startActivity(Intent(this, AppDetailActivity::class.java).apply {
+                    putExtra(AppDetailActivity.EXTRA_PACKAGE_NAME, item.packageName)
+                    putExtra(AppDetailActivity.EXTRA_APP_NAME, item.appName)
+                })
+            }
+        )
+
+        val recyclerView = findViewById<RecyclerView>(R.id.rv_apps)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
+        recyclerView.addItemDecoration(
+            DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
+        )
+
+        etSearch.doAfterTextChanged {
+            currentQuery = it?.toString().orEmpty()
+            filterAndSubmit(currentQuery)
         }
+
+        loadApps()
     }
 
     override fun onResume() {
         super.onResume()
-        updateStatusUI()
-    }
-
-    private fun updateStatusUI() {
-        val serviceEnabled = isAccessibilityServiceEnabled()
-        val overlayGranted = Settings.canDrawOverlays(this)
-        val usageGranted = UsageStatsHelper.hasPermission(this)
-
-        // Status card switch
-        switchService.isChecked = serviceEnabled
-        tvServiceStatus.text = if (serviceEnabled)
-            getString(R.string.status_active) else getString(R.string.status_inactive)
-
-        // Accessibility card
-        tvAccessibilityStatus.text = if (serviceEnabled)
-            getString(R.string.status_active) else getString(R.string.status_inactive)
-        tvAccessibilityStatus.setTextColor(
-            if (serviceEnabled) getColor(android.R.color.holo_green_dark)
-            else getColor(android.R.color.holo_red_light)
-        )
-
-        // Overlay card
-        tvOverlayStatus.text = if (overlayGranted)
-            getString(R.string.status_granted) else getString(R.string.status_not_granted)
-        tvOverlayStatus.setTextColor(
-            if (overlayGranted) getColor(android.R.color.holo_green_dark)
-            else getColor(android.R.color.holo_red_light)
-        )
-
-        // Usage access card
-        tvUsageStatus.text = if (usageGranted)
-            getString(R.string.status_granted) else getString(R.string.status_not_granted)
-        tvUsageStatus.setTextColor(
-            if (usageGranted) getColor(android.R.color.holo_green_dark)
-            else getColor(android.R.color.holo_orange_light)  // orange = optional, not an error
-        )
-    }
-
-    /**
-     * Checks whether [BlockerAccessibilityService] is listed in
-     * Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES.
-     */
-    private fun isAccessibilityServiceEnabled(): Boolean {
-        val expected = ComponentName(this, BlockerAccessibilityService::class.java)
-        val setting = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
-
-        val splitter = TextUtils.SimpleStringSplitter(':')
-        splitter.setString(setting)
-        while (splitter.hasNext()) {
-            val flat = splitter.next()
-            val cn = ComponentName.unflattenFromString(flat)
-            if (cn != null && cn == expected) return true
+        if (allApps.isNotEmpty()) {
+            allApps = allApps.map { app ->
+                app.copy(isWatched = prefs.isWatched(app.packageName))
+            }
+            filterAndSubmit(etSearch.text?.toString().orEmpty())
         }
-        return false
+        switchPause.setOnCheckedChangeListener(null)
+        switchPause.isChecked = !prefs.isPaused
+        switchPause.setOnCheckedChangeListener { _, isChecked ->
+            prefs.isPaused = !isChecked
+            updatePauseCard(!isChecked)
+        }
+        updatePauseCard(prefs.isPaused)
+    }
+
+    private fun loadApps() {
+        lifecycleScope.launch {
+            val apps = withContext(Dispatchers.IO) {
+                val pm = packageManager
+                pm.getInstalledApplications(0)
+                    .filter { appInfo ->
+                        appInfo.packageName != packageName &&
+                            (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0 &&
+                            (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0
+                    }
+                    .map { appInfo ->
+                        AppListItem(
+                            packageName = appInfo.packageName,
+                            appName = pm.getApplicationLabel(appInfo).toString(),
+                            icon = pm.getApplicationIcon(appInfo),
+                            isWatched = prefs.isWatched(appInfo.packageName)
+                        )
+                    }
+            }
+            allApps = apps
+            filterAndSubmit(currentQuery)
+        }
+    }
+
+    private fun filterAndSubmit(query: String) {
+        val filtered = if (query.isBlank()) {
+            allApps
+        } else {
+            allApps.filter {
+                it.appName.contains(query, ignoreCase = true) ||
+                    it.packageName.contains(query, ignoreCase = true)
+            }
+        }
+        submitSortedList(filtered)
+    }
+
+    private fun submitSortedList(list: List<AppListItem>) {
+        val sorted = list.sortedWith(
+            compareByDescending<AppListItem> { it.isWatched }
+                .thenBy { it.appName.lowercase() }
+        )
+        adapter.submitList(sorted)
+    }
+
+    private fun updatePauseCard(isPaused: Boolean) {
+        if (isPaused) {
+            tvPauseTitle.text = getString(R.string.label_protection_paused)
+            tvPauseSubtitle.text = getString(R.string.desc_protection_paused)
+            cardPause.setCardBackgroundColor(
+                MaterialColors.getColor(
+                    cardPause,
+                    com.google.android.material.R.attr.colorErrorContainer
+                )
+            )
+        } else {
+            tvPauseTitle.text = getString(R.string.label_protection_active)
+            tvPauseSubtitle.text = getString(R.string.desc_protection_active)
+            cardPause.setCardBackgroundColor(
+                MaterialColors.getColor(
+                    cardPause,
+                    com.google.android.material.R.attr.colorSurface
+                )
+            )
+        }
     }
 }
