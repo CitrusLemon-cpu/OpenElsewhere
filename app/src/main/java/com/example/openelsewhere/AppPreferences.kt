@@ -12,6 +12,7 @@ class AppPreferences private constructor(context: Context) {
         private const val PREFS_NAME = "open_elsewhere_prefs"
         private const val KEY_WATCHED = "watched_packages"
         private const val KEY_PAUSED = "paused"
+        private const val KEY_DEBUG_MODE = "debug_mode"
         private const val PREFIX_UNBLOCKED = "unblocked_"
         private const val PREFIX_BLOCKED_LOG = "blocked_log_"
 
@@ -28,6 +29,12 @@ class AppPreferences private constructor(context: Context) {
         get() = prefs.getBoolean(KEY_PAUSED, false)
         set(value) {
             prefs.edit().putBoolean(KEY_PAUSED, value).apply()
+        }
+
+    var isDebugMode: Boolean
+        get() = prefs.getBoolean(KEY_DEBUG_MODE, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_DEBUG_MODE, value).apply()
         }
 
     fun getWatchedPackages(): Set<String> =

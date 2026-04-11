@@ -13,13 +13,17 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.switchmaterial.SwitchMaterial
 
 class SettingsActivity : AppCompatActivity() {
+
+    private lateinit var prefs: AppPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_settings)
+        prefs = AppPreferences.getInstance(this)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.settings_root)) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -45,6 +49,13 @@ class SettingsActivity : AppCompatActivity() {
         }
         findViewById<MaterialButton>(R.id.btn_usage_settings).setOnClickListener {
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        }
+
+        findViewById<SwitchMaterial>(R.id.switch_debug_mode).apply {
+            isChecked = prefs.isDebugMode
+            setOnCheckedChangeListener { _, isChecked ->
+                prefs.isDebugMode = isChecked
+            }
         }
     }
 
