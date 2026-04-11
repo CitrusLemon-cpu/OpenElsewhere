@@ -14,26 +14,25 @@ class BlockerAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val DEBUG_NOTIFICATION_CHANNEL_ID = "open_elsewhere_debug"
+        @Volatile var instance: BlockerAccessibilityService? = null
     }
 
-    private var overlayManager: OverlayManager? = null
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var prefs: AppPreferences
 
     private val preferenceListener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
         if (prefs.isPaused) {
-            overlayManager?.dismiss()
+            BlockActivity.finishIfShowing()
             handler.removeCallbacks(usageStatsCheckRunnable)
         }
     }
 
     private val usageStatsCheckRunnable = object : Runnable {
         override fun run() {
-            val manager = overlayManager ?: return
-            if (!manager.isShowing) return
+            if (BlockActivity.instance == null) return
             val foreground = UsageStatsHelper.getForegroundPackage(this@BlockerAccessibilityService)
             if (foreground != null && !prefs.isWatched(foreground)) {
-                manager.dismiss()
+                BlockActivity.finishIfShowing()
             } else {
                 handler.postDelayed(this, 2_000L)
             }
@@ -42,9 +41,9 @@ class BlockerAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        instance = this
         prefs = AppPreferences.getInstance(this)
         prefs.registerListener(preferenceListener)
-        overlayManager = OverlayManager(this)
         val channel = NotificationChannel(
             "open_elsewhere_debug",
             "Debug — Activity Names",
@@ -62,7 +61,7 @@ class BlockerAccessibilityService : AccessibilityService() {
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
 
         if (prefs.isPaused) {
-            overlayManager?.dismiss()
+            BlockActivity.finishIfShowing()
             handler.removeCallbacks(usageStatsCheckRunnable)
             return
         }
@@ -75,7 +74,7 @@ class BlockerAccessibilityService : AccessibilityService() {
         }
 
         if (!prefs.isWatched(packageName)) {
-            overlayManager?.dismiss()
+            BlockActivity.finishIfShowing()
             handler.removeCallbacks(usageStatsCheckRunnable)
             return
         }
@@ -89,27 +88,35 @@ class BlockerAccessibilityService : AccessibilityService() {
 
         if (isBrowserActivity) {
             prefs.logBlockedActivity(packageName, className)
-            overlayManager?.show()
+            if (BlockActivity.instance == null) {
+                val intent = android.content.Intent(this, BlockActivity::class.java).apply {
+                    addFlags(
+                        android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                            android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                    )
+                }
+                startActivity(intent)
+            }
             handler.removeCallbacks(usageStatsCheckRunnable)
             handler.postDelayed(usageStatsCheckRunnable, 2_000L)
         } else {
-            overlayManager?.dismiss()
+            BlockActivity.finishIfShowing()
             handler.removeCallbacks(usageStatsCheckRunnable)
         }
     }
 
     override fun onInterrupt() {
-        overlayManager?.dismiss()
+        BlockActivity.finishIfShowing()
         handler.removeCallbacks(usageStatsCheckRunnable)
     }
 
     override fun onDestroy() {
+        instance = null
+        BlockActivity.finishIfShowing()
         if (::prefs.isInitialized) {
             prefs.unregisterListener(preferenceListener)
         }
-        overlayManager?.dismiss()
         handler.removeCallbacks(usageStatsCheckRunnable)
-        overlayManager = null
         super.onDestroy()
     }
 
