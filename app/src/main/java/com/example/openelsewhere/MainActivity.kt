@@ -1,7 +1,6 @@
 package com.example.openelsewhere
 
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -124,18 +123,20 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val apps = withContext(Dispatchers.IO) {
                 val pm = packageManager
-                pm.getInstalledApplications(0)
-                    .filter { appInfo ->
-                        appInfo.packageName != packageName &&
-                            (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0 &&
-                            (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0
-                    }
-                    .map { appInfo ->
+                val launcherIntent = Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_LAUNCHER)
+                }
+                pm.queryIntentActivities(launcherIntent, 0)
+                    .map { it.activityInfo }
+                    .filter { activityInfo -> activityInfo.packageName != packageName }
+                    .distinctBy { it.packageName }
+                    .map { activityInfo ->
+                        val appInfo = pm.getApplicationInfo(activityInfo.packageName, 0)
                         AppListItem(
-                            packageName = appInfo.packageName,
+                            packageName = activityInfo.packageName,
                             appName = pm.getApplicationLabel(appInfo).toString(),
                             icon = pm.getApplicationIcon(appInfo),
-                            isWatched = prefs.isWatched(appInfo.packageName)
+                            isWatched = prefs.isWatched(activityInfo.packageName)
                         )
                     }
             }
