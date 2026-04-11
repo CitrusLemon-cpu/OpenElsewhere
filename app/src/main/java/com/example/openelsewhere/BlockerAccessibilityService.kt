@@ -2,12 +2,19 @@ package com.example.openelsewhere
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
+import androidx.core.app.NotificationCompat
 
 class BlockerAccessibilityService : AccessibilityService() {
+
+    companion object {
+        private const val DEBUG_NOTIFICATION_CHANNEL_ID = "open_elsewhere_debug"
+    }
 
     private var overlayManager: OverlayManager? = null
     private val handler = Handler(Looper.getMainLooper())
@@ -38,6 +45,12 @@ class BlockerAccessibilityService : AccessibilityService() {
         prefs = AppPreferences.getInstance(this)
         prefs.registerListener(preferenceListener)
         overlayManager = OverlayManager(this)
+        val channel = NotificationChannel(
+            "open_elsewhere_debug",
+            "Debug — Activity Names",
+            NotificationManager.IMPORTANCE_LOW
+        )
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         serviceInfo = serviceInfo?.also { info ->
             info.eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
             info.feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
@@ -56,6 +69,10 @@ class BlockerAccessibilityService : AccessibilityService() {
 
         val packageName = event.packageName?.toString() ?: return
         val className = event.className?.toString() ?: return
+
+        if (prefs.isDebugMode && prefs.isWatched(packageName)) {
+            postDebugNotification(packageName, className)
+        }
 
         if (!prefs.isWatched(packageName)) {
             overlayManager?.dismiss()
@@ -94,5 +111,20 @@ class BlockerAccessibilityService : AccessibilityService() {
         handler.removeCallbacks(usageStatsCheckRunnable)
         overlayManager = null
         super.onDestroy()
+    }
+
+    private fun postDebugNotification(packageName: String, className: String) {
+        val packageShortName = packageName.substringAfterLast('.')
+        val notification = NotificationCompat.Builder(this, DEBUG_NOTIFICATION_CHANNEL_ID)
+            .setContentTitle("[$packageShortName] → $className")
+            .setContentText(className)
+            .setSubText(packageName)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setAutoCancel(true)
+            .build()
+
+        getSystemService(NotificationManager::class.java)
+            .notify(className.hashCode(), notification)
     }
 }

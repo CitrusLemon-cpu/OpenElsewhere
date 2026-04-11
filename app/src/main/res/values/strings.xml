@@ -19,6 +19,8 @@
     <string name="label_usage">Usage Access (Optional)</string>
     <string name="desc_usage">Secondary signal for detecting app switches</string>
     <string name="btn_usage_settings">Open Usage Access Settings</string>
+    <string name="label_debug_mode">Debug Mode</string>
+    <string name="desc_debug_mode">Show notifications with activity class names</string>
     <string name="overlay_title">In-app browser blocked</string>
     <string name="overlay_subtitle">This link was blocked from opening in the app\'s built-in browser.</string>
     <string name="overlay_go_back">Go Back</string>
