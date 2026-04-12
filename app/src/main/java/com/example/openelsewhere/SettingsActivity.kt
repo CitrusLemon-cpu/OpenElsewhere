@@ -52,6 +52,9 @@ class SettingsActivity : AppCompatActivity() {
             }
             startActivity(intent)
         }
+        findViewById<MaterialButton>(R.id.btn_notification_settings).setOnClickListener {
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        }
         findViewById<MaterialButton>(R.id.btn_battery_opt).setOnClickListener {
             val intent = Intent(
                 Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
@@ -127,6 +130,14 @@ class SettingsActivity : AppCompatActivity() {
             R.string.status_inactive,
             required = false
         )
+        val notificationEnabled = isNotificationListenerEnabled()
+        setStatus(
+            R.id.tv_notification_access_status,
+            notificationEnabled,
+            R.string.status_enabled,
+            R.string.status_disabled,
+            required = false
+        )
         val batteryExempted = isBatteryOptimizationExempted()
         setStatus(
             R.id.tv_battery_opt_status,
@@ -140,6 +151,16 @@ class SettingsActivity : AppCompatActivity() {
     private fun isBatteryOptimizationExempted(): Boolean {
         val pm = getSystemService(PowerManager::class.java)
         return pm.isIgnoringBatteryOptimizations(packageName)
+    }
+
+    private fun isNotificationListenerEnabled(): Boolean {
+        val listeners = Settings.Secure.getString(
+            contentResolver,
+            "enabled_notification_listeners"
+        ) ?: return false
+        return listeners.split(":").any {
+            ComponentName.unflattenFromString(it)?.packageName == packageName
+        }
     }
 
     private fun getOemProtectedAppsIntent(): Intent? {
