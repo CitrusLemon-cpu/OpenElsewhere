@@ -11,6 +11,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.switchmaterial.SwitchMaterial
 
 class AppDetailActivity : AppCompatActivity() {
 
@@ -22,8 +23,12 @@ class AppDetailActivity : AppCompatActivity() {
     private lateinit var prefs: AppPreferences
     private lateinit var selectedPackageName: String
     private lateinit var llBlocked: LinearLayout
+    private lateinit var llUserBlocked: LinearLayout
     private lateinit var llUnblocked: LinearLayout
+    private lateinit var switchAllowlistMode: SwitchMaterial
+    private lateinit var tvBlockingModeDesc: TextView
     private lateinit var tvBlockedEmpty: TextView
+    private lateinit var tvUserBlockedEmpty: TextView
     private lateinit var tvUnblockedEmpty: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,10 +55,23 @@ class AppDetailActivity : AppCompatActivity() {
         toolbar.title = appName
         toolbar.setNavigationOnClickListener { finish() }
 
+        switchAllowlistMode = findViewById(R.id.switch_allowlist_mode)
+        tvBlockingModeDesc = findViewById(R.id.tv_blocking_mode_desc)
         llBlocked = findViewById(R.id.ll_blocked_activities)
+        llUserBlocked = findViewById(R.id.ll_user_blocked_activities)
         llUnblocked = findViewById(R.id.ll_unblocked_activities)
         tvBlockedEmpty = findViewById(R.id.tv_blocked_empty)
+        tvUserBlockedEmpty = findViewById(R.id.tv_user_blocked_empty)
         tvUnblockedEmpty = findViewById(R.id.tv_unblocked_empty)
+
+        val initialMode = prefs.getBlockingMode(selectedPackageName)
+        switchAllowlistMode.isChecked = initialMode == BlockingMode.ALLOWLIST
+        updateModeDesc(initialMode)
+        switchAllowlistMode.setOnCheckedChangeListener { _, isChecked ->
+            val mode = if (isChecked) BlockingMode.ALLOWLIST else BlockingMode.KEYWORD
+            prefs.setBlockingMode(selectedPackageName, mode)
+            updateModeDesc(mode)
+        }
 
         refreshLists()
     }
@@ -65,6 +83,7 @@ class AppDetailActivity : AppCompatActivity() {
 
     private fun refreshLists() {
         buildBlockedList()
+        buildUserBlockedList()
         buildUnblockedList()
     }
 
@@ -113,6 +132,39 @@ class AppDetailActivity : AppCompatActivity() {
                 )
             }
         }
+    }
+
+    private fun buildUserBlockedList() {
+        llUserBlocked.removeAllViews()
+        val userBlocked = prefs.getUserBlockedActivities(selectedPackageName)
+
+        if (userBlocked.isEmpty()) {
+            tvUserBlockedEmpty.visibility = View.VISIBLE
+        } else {
+            tvUserBlockedEmpty.visibility = View.GONE
+            userBlocked.sorted().forEach { activityClass ->
+                llUserBlocked.addView(
+                    inflateActivityRow(
+                        activityClass = activityClass,
+                        buttonLabel = getString(R.string.btn_unblock_activity),
+                        onButtonClick = {
+                            prefs.removeUserBlockedActivity(selectedPackageName, activityClass)
+                            refreshLists()
+                        }
+                    )
+                )
+            }
+        }
+    }
+
+    private fun updateModeDesc(mode: BlockingMode) {
+        tvBlockingModeDesc.text = getString(
+            if (mode == BlockingMode.ALLOWLIST) {
+                R.string.desc_allowlist_mode_on
+            } else {
+                R.string.desc_allowlist_mode_off
+            }
+        )
     }
 
     private fun inflateActivityRow(

@@ -15,6 +15,8 @@ class AppPreferences private constructor(context: Context) {
         private const val KEY_DEBUG_MODE = "debug_mode"
         private const val PREFIX_UNBLOCKED = "unblocked_"
         private const val PREFIX_BLOCKED_LOG = "blocked_log_"
+        private const val PREFIX_BLOCKING_MODE = "blocking_mode_"
+        private const val PREFIX_USER_BLOCKED = "user_blocked_"
 
         @Volatile
         private var instance: AppPreferences? = null
@@ -62,6 +64,34 @@ class AppPreferences private constructor(context: Context) {
         val current = getUnblockedActivities(packageName).toMutableSet()
         current.remove(activityClass)
         prefs.edit().putStringSet("$PREFIX_UNBLOCKED$packageName", current).apply()
+    }
+
+    fun getBlockingMode(packageName: String): BlockingMode {
+        val raw = prefs.getString("$PREFIX_BLOCKING_MODE$packageName", BlockingMode.KEYWORD.name)
+        return try {
+            BlockingMode.valueOf(raw ?: BlockingMode.KEYWORD.name)
+        } catch (_: IllegalArgumentException) {
+            BlockingMode.KEYWORD
+        }
+    }
+
+    fun setBlockingMode(packageName: String, mode: BlockingMode) {
+        prefs.edit().putString("$PREFIX_BLOCKING_MODE$packageName", mode.name).apply()
+    }
+
+    fun getUserBlockedActivities(packageName: String): Set<String> =
+        prefs.getStringSet("$PREFIX_USER_BLOCKED$packageName", emptySet()) ?: emptySet()
+
+    fun addUserBlockedActivity(packageName: String, activityClass: String) {
+        val current = getUserBlockedActivities(packageName).toMutableSet()
+        current.add(activityClass)
+        prefs.edit().putStringSet("$PREFIX_USER_BLOCKED$packageName", current).apply()
+    }
+
+    fun removeUserBlockedActivity(packageName: String, activityClass: String) {
+        val current = getUserBlockedActivities(packageName).toMutableSet()
+        current.remove(activityClass)
+        prefs.edit().putStringSet("$PREFIX_USER_BLOCKED$packageName", current).apply()
     }
 
     fun logBlockedActivity(packageName: String, activityClass: String) {
