@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.graphics.PixelFormat
 import android.os.Handler
 import android.os.Looper
@@ -25,6 +26,7 @@ class BlockerNotificationListenerService : NotificationListenerService() {
     private var overlayView: View? = null
     private lateinit var windowManager: WindowManager
     private var receiverRegistered = false
+    private var periodicCheckScheduled = false
 
     private val powerSaveReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -32,14 +34,33 @@ class BlockerNotificationListenerService : NotificationListenerService() {
         }
     }
 
+    private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+        handler.post { updateOverlayState() }
+    }
+
+    private val periodicCheckRunnable = object : Runnable {
+        override fun run() {
+            periodicCheckScheduled = false
+            val pm = getSystemService(PowerManager::class.java)
+            if (pm.isPowerSaveMode) {
+                updateOverlayState()
+                startPeriodicCheckIfNeeded()
+            }
+        }
+    }
+
     override fun onListenerConnected() {
         super.onListenerConnected()
         instance = this
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        AppPreferences.getInstance(this).registerListener(prefsListener)
         try {
             registerReceiver(powerSaveReceiver, IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED))
             receiverRegistered = true
         } catch (_: Exception) {}
+        if (getSystemService(PowerManager::class.java).isPowerSaveMode) {
+            startPeriodicCheckIfNeeded()
+        }
         handler.post { updateOverlayState() }
     }
 
@@ -54,7 +75,12 @@ class BlockerNotificationListenerService : NotificationListenerService() {
     }
 
     private fun cleanup() {
+        handler.removeCallbacks(periodicCheckRunnable)
+        periodicCheckScheduled = false
         handler.post { dismissOverlay() }
+        try {
+            AppPreferences.getInstance(this).unregisterListener(prefsListener)
+        } catch (_: Exception) {}
         if (receiverRegistered) {
             try {
                 unregisterReceiver(powerSaveReceiver)
@@ -67,12 +93,26 @@ class BlockerNotificationListenerService : NotificationListenerService() {
     private fun updateOverlayState() {
         val pm = getSystemService(PowerManager::class.java)
         val prefs = AppPreferences.getInstance(this)
+        val wasShowing = overlayView != null
         val shouldShow = pm.isPowerSaveMode &&
             BlockerAccessibilityService.instance == null &&
             !prefs.isPaused &&
             prefs.getWatchedPackages().isNotEmpty() &&
             Settings.canDrawOverlays(this)
-        if (shouldShow) showOverlay() else dismissOverlay()
+        if (shouldShow) {
+            showOverlay()
+            if (!wasShowing) {
+                startPeriodicCheckIfNeeded()
+            }
+        } else {
+            dismissOverlay()
+        }
+    }
+
+    private fun startPeriodicCheckIfNeeded() {
+        if (periodicCheckScheduled) return
+        periodicCheckScheduled = true
+        handler.postDelayed(periodicCheckRunnable, 3_000L)
     }
 
     private fun showOverlay() {
