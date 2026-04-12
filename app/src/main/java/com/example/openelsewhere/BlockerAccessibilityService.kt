@@ -131,6 +131,16 @@ class BlockerAccessibilityService : AccessibilityService() {
         val packageName = event.packageName?.toString() ?: return
         val className = event.className?.toString() ?: return
 
+        // Skip transient system widget events — these are not real activity transitions
+        // and would falsely cancel active blocking (e.g. android.widget.FrameLayout fires
+        // during WeChat's browser loading and resets isBlockingActive = false)
+        if (className.startsWith("android.widget.") ||
+            className.startsWith("android.view.") ||
+            className.startsWith("android.app.") && !className.contains("Activity")
+        ) {
+            return
+        }
+
         if (prefs.isDebugMode && prefs.isWatched(packageName)) {
             postDebugNotification(packageName, className)
         }
