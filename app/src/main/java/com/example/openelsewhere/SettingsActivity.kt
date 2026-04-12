@@ -39,6 +39,17 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.btn_accessibility_settings).setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
+        findViewById<MaterialButton>(R.id.btn_shortcut_settings).setOnClickListener {
+            val componentName = ComponentName(this, BlockerAccessibilityService::class.java)
+                .flattenToString()
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                val args = Bundle()
+                args.putString(":settings:fragment_args_key", componentName)
+                putExtra(":settings:show_fragment_args", args)
+                putExtra(":settings:fragment_args_key", componentName)
+            }
+            startActivity(intent)
+        }
         findViewById<MaterialButton>(R.id.btn_overlay_settings).setOnClickListener {
             startActivity(
                 Intent(
@@ -90,6 +101,34 @@ class SettingsActivity : AppCompatActivity() {
             R.string.status_not_granted,
             required = false
         )
+        val shortcutEnabled = isAccessibilityShortcutEnabled()
+        setStatus(
+            R.id.tv_shortcut_status,
+            shortcutEnabled,
+            R.string.status_active,
+            R.string.status_inactive,
+            required = false
+        )
+    }
+
+    private fun isAccessibilityShortcutEnabled(): Boolean {
+        val ourComponent = ComponentName(this, BlockerAccessibilityService::class.java)
+            .flattenToString().lowercase()
+
+        fun String?.containsOurService(): Boolean {
+            if (isNullOrBlank()) return false
+            return split(":").any { it.trim().lowercase() == ourComponent }
+        }
+
+        val shortcutTarget = Settings.Secure.getString(
+            contentResolver,
+            "accessibility_shortcut_target_service"
+        )
+        val buttonTargets = Settings.Secure.getString(
+            contentResolver,
+            "accessibility_button_targets"
+        )
+        return shortcutTarget.containsOurService() || buttonTargets.containsOurService()
     }
 
     private fun setStatus(

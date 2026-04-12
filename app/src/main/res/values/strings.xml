@@ -19,6 +19,9 @@
     <string name="label_usage">Usage Access (Optional)</string>
     <string name="desc_usage">Secondary signal for detecting app switches</string>
     <string name="btn_usage_settings">Open Usage Access Settings</string>
+    <string name="label_shortcut">Accessibility Shortcut</string>
+    <string name="desc_shortcut">Enables protection to survive Ultra Battery Saver mode. Open the accessibility settings, tap OpenElsewhere Blocker, and enable the shortcut.</string>
+    <string name="btn_shortcut_settings">Configure Shortcut</string>
     <string name="label_debug_mode">Debug Mode</string>
     <string name="desc_debug_mode">Show notifications with activity class names</string>
     <string name="overlay_title">In-app browser blocked</string>
