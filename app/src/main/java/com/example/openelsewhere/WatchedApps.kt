@@ -12,6 +12,9 @@ object WatchedApps {
             "com.tencent.mm.plugin.account.ui.PhoneLoginUI",
             "com.tencent.mm.ui.contact.AddContactUI",
             "com.tencent.mm.ui.tools.PayUI"
-        )
+        ),
+        // Tile uses obfuscated class names — start with empty allowed set.
+        // User builds their own allowed list via Debug Mode → "Allow this" notifications.
+        "com.thetileapp.tile" to emptySet()
     )
 }

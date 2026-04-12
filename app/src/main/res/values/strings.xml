@@ -32,12 +32,19 @@
     <string name="section_installed_apps">INSTALLED APPS</string>
     <string name="action_settings">Settings</string>
     <string name="title_settings">Permissions</string>
+    <string name="label_allowlist_mode">Allowlist Mode</string>
+    <string name="desc_allowlist_mode_off">Blocking browser-like activities by keyword</string>
+    <string name="desc_allowlist_mode_on">Blocking everything except allowed activities</string>
     <string name="section_blocked_activities">Recently Blocked</string>
     <string name="desc_blocked_activities">Activities blocked by OpenElsewhere. Tap Allow to whitelist one.</string>
     <string name="empty_blocked_activities">No blocked activities recorded yet.</string>
+    <string name="section_user_blocked_activities">Always Blocked</string>
+    <string name="desc_user_blocked_activities">Activities you explicitly marked as blocked from debug notifications.</string>
+    <string name="empty_user_blocked_activities">No always-blocked activities added yet.</string>
     <string name="section_allowed_exceptions">Allowed Exceptions</string>
     <string name="desc_allowed_exceptions">Activities you\'ve manually permitted. Tap Re-block to undo.</string>
     <string name="empty_allowed_exceptions">No exceptions added yet.</string>
     <string name="btn_allow_activity">Allow</string>
     <string name="btn_reblock_activity">Re-block</string>
+    <string name="btn_unblock_activity">Unblock</string>
 </resources>
