@@ -3,7 +3,9 @@ package com.example.openelsewhere
 import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
 import android.text.TextUtils
 import android.widget.TextView
@@ -50,6 +52,13 @@ class SettingsActivity : AppCompatActivity() {
             }
             startActivity(intent)
         }
+        findViewById<MaterialButton>(R.id.btn_battery_opt).setOnClickListener {
+            val intent = Intent(
+                Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                Uri.parse("package:$packageName")
+            )
+            startActivity(intent)
+        }
         findViewById<MaterialButton>(R.id.btn_overlay_settings).setOnClickListener {
             startActivity(
                 Intent(
@@ -60,6 +69,15 @@ class SettingsActivity : AppCompatActivity() {
         }
         findViewById<MaterialButton>(R.id.btn_usage_settings).setOnClickListener {
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        }
+        findViewById<TextView>(R.id.tv_protected_apps_desc).text = getOemDescriptionString()
+        findViewById<MaterialButton>(R.id.btn_protected_apps).setOnClickListener {
+            val oemIntent = getOemProtectedAppsIntent()
+            if (oemIntent != null) {
+                startActivity(oemIntent)
+            } else {
+                startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            }
         }
 
         findViewById<SwitchMaterial>(R.id.switch_debug_mode).apply {
@@ -109,6 +127,87 @@ class SettingsActivity : AppCompatActivity() {
             R.string.status_inactive,
             required = false
         )
+        val batteryExempted = isBatteryOptimizationExempted()
+        setStatus(
+            R.id.tv_battery_opt_status,
+            batteryExempted,
+            R.string.status_exempted,
+            R.string.status_not_exempted,
+            required = false
+        )
+    }
+
+    private fun isBatteryOptimizationExempted(): Boolean {
+        val pm = getSystemService(PowerManager::class.java)
+        return pm.isIgnoringBatteryOptimizations(packageName)
+    }
+
+    private fun getOemProtectedAppsIntent(): Intent? {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        val intents = when {
+            manufacturer.contains("huawei") || manufacturer.contains("honor") -> listOf(
+                Intent().setClassName(
+                    "com.huawei.systemmanager",
+                    "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"
+                ),
+                Intent().setClassName(
+                    "com.huawei.systemmanager",
+                    "com.huawei.systemmanager.appcontrol.activity.StartupAppControlActivity"
+                )
+            )
+            manufacturer.contains("xiaomi") || manufacturer.contains("redmi") || manufacturer.contains("poco") -> listOf(
+                Intent().setClassName(
+                    "com.miui.securitycenter",
+                    "com.miui.permcenter.autostart.AutoStartManagementActivity"
+                )
+            )
+            manufacturer.contains("oppo") || manufacturer.contains("realme") || manufacturer.contains("oneplus") -> listOf(
+                Intent().setClassName(
+                    "com.coloros.safecenter",
+                    "com.coloros.privacypermissionsentry.PermissionTopActivity"
+                ),
+                Intent().setClassName(
+                    "com.oppo.safe",
+                    "com.coloros.safecenter.permission.startup.StartupAppListActivity"
+                )
+            )
+            manufacturer.contains("vivo") -> listOf(
+                Intent().setClassName(
+                    "com.vivo.permissionmanager",
+                    "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"
+                )
+            )
+            manufacturer.contains("samsung") -> listOf(
+                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+            )
+            else -> emptyList()
+        }
+        return intents.firstOrNull { intent ->
+            intent.component?.let { cn ->
+                packageManager.resolveActivity(
+                    Intent().setClassName(cn.packageName, cn.className),
+                    0
+                ) != null
+            } ?: (packageManager.resolveActivity(intent, 0) != null)
+        }
+    }
+
+    private fun getOemDescriptionString(): String {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        return when {
+            manufacturer.contains("huawei") || manufacturer.contains("honor") ->
+                getString(R.string.desc_protected_apps_huawei)
+            manufacturer.contains("xiaomi") || manufacturer.contains("redmi") || manufacturer.contains("poco") ->
+                getString(R.string.desc_protected_apps_xiaomi)
+            manufacturer.contains("oppo") || manufacturer.contains("realme") || manufacturer.contains("oneplus") ->
+                getString(R.string.desc_protected_apps_oppo)
+            manufacturer.contains("vivo") ->
+                getString(R.string.desc_protected_apps_vivo)
+            manufacturer.contains("samsung") ->
+                getString(R.string.desc_protected_apps_samsung)
+            else ->
+                getString(R.string.desc_protected_apps_generic)
+        }
     }
 
     private fun isAccessibilityShortcutEnabled(): Boolean {
