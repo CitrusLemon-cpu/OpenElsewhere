@@ -79,7 +79,11 @@ class BlockerAccessibilityService : AccessibilityService() {
         override fun run() {
             if (BlockActivity.instance == null) return
             val foreground = UsageStatsHelper.getForegroundPackage(this@BlockerAccessibilityService)
-            if (foreground != null && !prefs.isWatched(foreground)) {
+            if (
+                foreground != null &&
+                    !prefs.isWatched(foreground) &&
+                    foreground != applicationContext.packageName
+            ) {
                 isBlockingActive = false
                 handler.removeCallbacks(blockEnforceRunnable)
                 BlockActivity.finishIfShowing()
@@ -147,6 +151,7 @@ class BlockerAccessibilityService : AccessibilityService() {
         }
 
         if (!prefs.isWatched(packageName)) {
+            if (packageName == applicationContext.packageName) return
             isBlockingActive = false
             handler.removeCallbacks(blockEnforceRunnable)
             BlockActivity.finishIfShowing()
@@ -176,6 +181,7 @@ class BlockerAccessibilityService : AccessibilityService() {
             prefs.logBlockedActivity(packageName, className)
             if (!isBlockingActive) {
                 isBlockingActive = true
+                performGlobalAction(GLOBAL_ACTION_BACK)
                 handler.removeCallbacks(blockEnforceRunnable)
                 handler.post(blockEnforceRunnable)
             }
