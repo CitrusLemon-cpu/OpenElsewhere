@@ -57,6 +57,14 @@
             </intent-filter>
         </service>
 
+        <receiver
+            android:name=".PowerSaveBroadcastReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.os.action.POWER_SAVE_MODE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".SettingsActivity"
             android:exported="false"
