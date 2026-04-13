@@ -89,7 +89,8 @@ class BlockerNotificationListenerService : NotificationListenerService() {
     private fun updateOverlayState() {
         val prefs = AppPreferences.getInstance(this)
         val wasShowing = overlayView != null
-        val shouldShow = BlockerAccessibilityService.instance == null &&
+        val shouldShow = isPowerSaveModeEnabled() &&
+            BlockerAccessibilityService.instance == null &&
             !prefs.isPaused &&
             prefs.getWatchedPackages().isNotEmpty() &&
             Settings.canDrawOverlays(this) &&
@@ -97,11 +98,17 @@ class BlockerNotificationListenerService : NotificationListenerService() {
         if (shouldShow) {
             showOverlay()
             if (!wasShowing) {
+                navigateToHomeScreen()
                 startPeriodicCheckIfNeeded()
             }
         } else {
             dismissOverlay()
         }
+    }
+
+    private fun isPowerSaveModeEnabled(): Boolean {
+        val powerManager = getSystemService(PowerManager::class.java)
+        return powerManager?.isPowerSaveMode == true
     }
 
     private fun startPeriodicCheckIfNeeded() {
@@ -120,8 +127,7 @@ class BlockerNotificationListenerService : NotificationListenerService() {
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
@@ -138,6 +144,16 @@ class BlockerNotificationListenerService : NotificationListenerService() {
         try {
             windowManager.addView(view, params)
             overlayView = view
+        } catch (_: Exception) {}
+    }
+
+    private fun navigateToHomeScreen() {
+        val intent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_HOME)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            startActivity(intent)
         } catch (_: Exception) {}
     }
 
