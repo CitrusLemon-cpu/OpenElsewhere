@@ -31,6 +31,7 @@ class BlockerNotificationListenerService : NotificationListenerService() {
     private var receiverRegistered = false
     private var accessibilityObserverRegistered = false
     private var periodicCheckScheduled = false
+    private var lastKnownPowerSaveState = false
 
     private val powerSaveReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -166,13 +167,20 @@ class BlockerNotificationListenerService : NotificationListenerService() {
         } else {
             dismissHardcoreOverlay()
             if (ubsActive) {
+                val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+                val powerSaveJustEnded = lastKnownPowerSaveState && !pm.isPowerSaveMode
+                lastKnownPowerSaveState = pm.isPowerSaveMode
                 showOverlay()
-                if (!wasUbsShowing) {
+                if (!wasUbsShowing || powerSaveJustEnded) {
                     tryReEnableAccessibilityService()
+                }
+                if (!wasUbsShowing) {
                     navigateToHomeScreen()
                     startPeriodicCheckIfNeeded()
                 }
             } else {
+                val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+                lastKnownPowerSaveState = pm.isPowerSaveMode
                 dismissOverlay()
             }
         }
