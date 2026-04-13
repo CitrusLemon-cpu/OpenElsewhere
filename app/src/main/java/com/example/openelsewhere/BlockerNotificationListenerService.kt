@@ -1,6 +1,7 @@
 package com.example.openelsewhere
 
 import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -9,6 +10,7 @@ import android.graphics.PixelFormat
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
+import android.content.pm.PackageManager
 import android.provider.Settings
 import android.service.notification.NotificationListenerService
 import android.view.Gravity
@@ -97,12 +99,31 @@ class BlockerNotificationListenerService : NotificationListenerService() {
         if (shouldShow) {
             showOverlay()
             if (!wasShowing) {
+                tryReEnableAccessibilityService()
                 navigateToHomeScreen()
                 startPeriodicCheckIfNeeded()
             }
         } else {
             dismissOverlay()
         }
+    }
+
+    private fun tryReEnableAccessibilityService() {
+        if (checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") != PackageManager.PERMISSION_GRANTED) return
+        try {
+            val cn = ComponentName(this, BlockerAccessibilityService::class.java).flattenToString()
+            val current = Settings.Secure.getString(
+                contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            ) ?: ""
+            val parts = if (current.isBlank()) emptyList() else current.split(":")
+            if (parts.none { it.equals(cn, ignoreCase = true) }) {
+                val updated = (parts + cn).joinToString(":")
+                Settings.Secure.putString(
+                    contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, updated
+                )
+            }
+            Settings.Secure.putInt(contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 1)
+        } catch (_: Exception) {}
     }
 
     private fun startPeriodicCheckIfNeeded() {

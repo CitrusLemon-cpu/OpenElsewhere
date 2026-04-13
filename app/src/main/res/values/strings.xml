@@ -51,6 +51,10 @@
     <string name="label_notification_access">Notification Access</string>
     <string name="desc_notification_access">Allows the app to restart automatically when Ultra Battery Saver kills it, then show a blocking screen until you disable Ultra Battery Saver.</string>
     <string name="btn_notification_settings">Open Notification Access</string>
+    <string name="label_write_secure_settings">Auto-Restore After UBS</string>
+    <string name="desc_write_secure_settings">Automatically re-enables accessibility monitoring after Ultra Battery Saver is turned off. Requires a one-time ADB command (USB debugging must be enabled).</string>
+    <string name="btn_copy_adb_command">Copy ADB Command</string>
+    <string name="adb_command_copied">ADB command copied to clipboard</string>
     <string name="label_ubs_screen">Ultra Battery Saver Blocking Screen</string>
     <string name="desc_ubs_screen">Shows a full-screen block when Ultra Battery Saver kills app monitoring.</string>
     <string name="status_enabled">Enabled</string>

@@ -9,6 +9,10 @@ import android.os.PowerManager
 import android.provider.Settings
 import android.text.TextUtils
 import android.widget.TextView
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -95,6 +99,13 @@ class SettingsActivity : AppCompatActivity() {
                 prefs.isUltraBatterySaverScreenEnabled = isChecked
             }
         }
+
+        findViewById<MaterialButton>(R.id.btn_copy_adb_command).setOnClickListener {
+            val cmd = "adb shell pm grant $packageName android.permission.WRITE_SECURE_SETTINGS"
+            val clipboard = getSystemService(ClipboardManager::class.java)
+            clipboard.setPrimaryClip(ClipData.newPlainText("ADB Command", cmd))
+            Toast.makeText(this, getString(R.string.adb_command_copied), Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onResume() {
@@ -150,6 +161,14 @@ class SettingsActivity : AppCompatActivity() {
             batteryExempted,
             R.string.status_exempted,
             R.string.status_not_exempted,
+            required = false
+        )
+        val hasWriteSecure = checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED
+        setStatus(
+            R.id.tv_write_secure_status,
+            hasWriteSecure,
+            R.string.status_granted,
+            R.string.status_not_granted,
             required = false
         )
     }
