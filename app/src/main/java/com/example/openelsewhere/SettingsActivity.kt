@@ -89,6 +89,12 @@ class SettingsActivity : AppCompatActivity() {
                 prefs.isDebugMode = isChecked
             }
         }
+        findViewById<SwitchMaterial>(R.id.switch_ubs_screen).apply {
+            isChecked = prefs.isUltraBatterySaverScreenEnabled
+            setOnCheckedChangeListener { _, isChecked ->
+                prefs.isUltraBatterySaverScreenEnabled = isChecked
+            }
+        }
     }
 
     override fun onResume() {

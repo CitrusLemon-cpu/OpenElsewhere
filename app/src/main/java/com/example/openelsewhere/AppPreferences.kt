@@ -13,6 +13,7 @@ class AppPreferences private constructor(context: Context) {
         private const val KEY_WATCHED = "watched_packages"
         private const val KEY_PAUSED = "paused"
         private const val KEY_DEBUG_MODE = "debug_mode"
+        private const val KEY_UBS_SCREEN = "ubs_screen_enabled"
         private const val PREFIX_UNBLOCKED = "unblocked_"
         private const val PREFIX_BLOCKED_LOG = "blocked_log_"
         private const val PREFIX_BLOCKING_MODE = "blocking_mode_"
@@ -37,6 +38,12 @@ class AppPreferences private constructor(context: Context) {
         get() = prefs.getBoolean(KEY_DEBUG_MODE, false)
         set(value) {
             prefs.edit().putBoolean(KEY_DEBUG_MODE, value).apply()
+        }
+
+    var isUltraBatterySaverScreenEnabled: Boolean
+        get() = prefs.getBoolean(KEY_UBS_SCREEN, true)
+        set(value) {
+            prefs.edit().putBoolean(KEY_UBS_SCREEN, value).apply()
         }
 
     fun getWatchedPackages(): Set<String> =
