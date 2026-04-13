@@ -51,6 +51,8 @@
     <string name="label_notification_access">Notification Access</string>
     <string name="desc_notification_access">Allows the app to restart automatically when Ultra Battery Saver kills it, then show a blocking screen until you disable Ultra Battery Saver.</string>
     <string name="btn_notification_settings">Open Notification Access</string>
+    <string name="label_ubs_screen">Ultra Battery Saver Blocking Screen</string>
+    <string name="desc_ubs_screen">Shows a full-screen block when Ultra Battery Saver kills app monitoring.</string>
     <string name="status_enabled">Enabled</string>
     <string name="status_disabled">Disabled</string>
     <string name="hint_search_apps">Search apps…</string>

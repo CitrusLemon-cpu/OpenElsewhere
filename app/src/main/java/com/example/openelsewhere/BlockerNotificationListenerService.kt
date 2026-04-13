@@ -1,7 +1,6 @@
 package com.example.openelsewhere
 
 import android.content.BroadcastReceiver
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -12,7 +11,6 @@ import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
 import android.service.notification.NotificationListenerService
-import android.text.TextUtils
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -59,7 +57,7 @@ class BlockerNotificationListenerService : NotificationListenerService() {
             registerReceiver(powerSaveReceiver, IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED))
             receiverRegistered = true
         } catch (_: Exception) {}
-        handler.post { updateOverlayState() }
+        handler.postDelayed({ updateOverlayState() }, 2_000L)
     }
 
     override fun onListenerDisconnected() {
@@ -91,11 +89,11 @@ class BlockerNotificationListenerService : NotificationListenerService() {
     private fun updateOverlayState() {
         val prefs = AppPreferences.getInstance(this)
         val wasShowing = overlayView != null
-        val shouldShow = isAccessibilityServiceEnabled() &&
-            BlockerAccessibilityService.instance == null &&
+        val shouldShow = BlockerAccessibilityService.instance == null &&
             !prefs.isPaused &&
             prefs.getWatchedPackages().isNotEmpty() &&
-            Settings.canDrawOverlays(this)
+            Settings.canDrawOverlays(this) &&
+            prefs.isUltraBatterySaverScreenEnabled
         if (shouldShow) {
             showOverlay()
             if (!wasShowing) {
@@ -104,21 +102,6 @@ class BlockerNotificationListenerService : NotificationListenerService() {
         } else {
             dismissOverlay()
         }
-    }
-
-    private fun isAccessibilityServiceEnabled(): Boolean {
-        val expected = ComponentName(this, BlockerAccessibilityService::class.java)
-        val setting = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
-        val splitter = TextUtils.SimpleStringSplitter(':')
-        splitter.setString(setting)
-        while (splitter.hasNext()) {
-            val cn = ComponentName.unflattenFromString(splitter.next())
-            if (cn != null && cn == expected) return true
-        }
-        return false
     }
 
     private fun startPeriodicCheckIfNeeded() {
