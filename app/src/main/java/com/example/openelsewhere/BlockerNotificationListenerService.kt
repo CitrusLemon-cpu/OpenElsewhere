@@ -69,19 +69,21 @@ class BlockerNotificationListenerService : NotificationListenerService() {
             registerReceiver(powerSaveReceiver, IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED))
             receiverRegistered = true
         } catch (_: Exception) {}
-        try {
-            contentResolver.registerContentObserver(
-                Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
-                false,
-                accessibilitySettingsObserver
-            )
-            contentResolver.registerContentObserver(
-                Settings.Secure.getUriFor(Settings.Secure.ACCESSIBILITY_ENABLED),
-                false,
-                accessibilitySettingsObserver
-            )
-            accessibilityObserverRegistered = true
-        } catch (_: Exception) {}
+        if (!accessibilityObserverRegistered) {
+            try {
+                contentResolver.registerContentObserver(
+                    Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
+                    false,
+                    accessibilitySettingsObserver
+                )
+                contentResolver.registerContentObserver(
+                    Settings.Secure.getUriFor(Settings.Secure.ACCESSIBILITY_ENABLED),
+                    false,
+                    accessibilitySettingsObserver
+                )
+                accessibilityObserverRegistered = true
+            } catch (_: Exception) {}
+        }
         handler.postDelayed({ updateOverlayState() }, 2_000L)
     }
 
