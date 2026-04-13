@@ -89,8 +89,7 @@ class BlockerNotificationListenerService : NotificationListenerService() {
     private fun updateOverlayState() {
         val prefs = AppPreferences.getInstance(this)
         val wasShowing = overlayView != null
-        val shouldShow = isPowerSaveModeEnabled() &&
-            BlockerAccessibilityService.instance == null &&
+        val shouldShow = BlockerAccessibilityService.instance == null &&
             !prefs.isPaused &&
             prefs.getWatchedPackages().isNotEmpty() &&
             Settings.canDrawOverlays(this) &&
@@ -104,11 +103,6 @@ class BlockerNotificationListenerService : NotificationListenerService() {
         } else {
             dismissOverlay()
         }
-    }
-
-    private fun isPowerSaveModeEnabled(): Boolean {
-        val powerManager = getSystemService(PowerManager::class.java)
-        return powerManager?.isPowerSaveMode == true
     }
 
     private fun startPeriodicCheckIfNeeded() {
