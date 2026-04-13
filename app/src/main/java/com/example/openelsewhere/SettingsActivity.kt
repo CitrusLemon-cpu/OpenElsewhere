@@ -99,6 +99,12 @@ class SettingsActivity : AppCompatActivity() {
                 prefs.isUltraBatterySaverScreenEnabled = isChecked
             }
         }
+        findViewById<SwitchMaterial>(R.id.switch_hardcore_mode).apply {
+            isChecked = prefs.isHardcoreMode
+            setOnCheckedChangeListener { _, isChecked ->
+                prefs.isHardcoreMode = isChecked
+            }
+        }
 
         findViewById<MaterialButton>(R.id.btn_copy_adb_command).setOnClickListener {
             val cmd = "adb shell pm grant $packageName android.permission.WRITE_SECURE_SETTINGS"
