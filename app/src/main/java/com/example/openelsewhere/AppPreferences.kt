@@ -13,12 +13,6 @@ class AppPreferences private constructor(context: Context) {
         private const val KEY_WATCHED = "watched_packages"
         private const val KEY_PAUSED = "paused"
         private const val KEY_DEBUG_MODE = "debug_mode"
-        private const val KEY_UBS_SCREEN = "ubs_screen_enabled"
-        private const val KEY_HARDCORE_MODE = "hardcore_mode"
-        private const val KEY_PERSISTENT_NOTIFICATION = "persistent_notification_enabled"
-        private const val KEY_FLOATING_BUBBLE = "floating_bubble_enabled"
-        private const val KEY_BUBBLE_X = "floating_bubble_x"
-        private const val KEY_BUBBLE_Y = "floating_bubble_y"
         private const val PREFIX_UNBLOCKED = "unblocked_"
         private const val PREFIX_BLOCKED_LOG = "blocked_log_"
         private const val PREFIX_BLOCKING_MODE = "blocking_mode_"
@@ -43,42 +37,6 @@ class AppPreferences private constructor(context: Context) {
         get() = prefs.getBoolean(KEY_DEBUG_MODE, false)
         set(value) {
             prefs.edit().putBoolean(KEY_DEBUG_MODE, value).apply()
-        }
-
-    var isUltraBatterySaverScreenEnabled: Boolean
-        get() = prefs.getBoolean(KEY_UBS_SCREEN, true)
-        set(value) {
-            prefs.edit().putBoolean(KEY_UBS_SCREEN, value).apply()
-        }
-
-    var isHardcoreMode: Boolean
-        get() = prefs.getBoolean(KEY_HARDCORE_MODE, false)
-        set(value) {
-            prefs.edit().putBoolean(KEY_HARDCORE_MODE, value).apply()
-        }
-
-    var isPersistentNotificationEnabled: Boolean
-        get() = prefs.getBoolean(KEY_PERSISTENT_NOTIFICATION, false)
-        set(value) {
-            prefs.edit().putBoolean(KEY_PERSISTENT_NOTIFICATION, value).apply()
-        }
-
-    var isFloatingBubbleEnabled: Boolean
-        get() = prefs.getBoolean(KEY_FLOATING_BUBBLE, false)
-        set(value) {
-            prefs.edit().putBoolean(KEY_FLOATING_BUBBLE, value).apply()
-        }
-
-    var floatingBubbleX: Int
-        get() = prefs.getInt(KEY_BUBBLE_X, -1)
-        set(value) {
-            prefs.edit().putInt(KEY_BUBBLE_X, value).apply()
-        }
-
-    var floatingBubbleY: Int
-        get() = prefs.getInt(KEY_BUBBLE_Y, 300)
-        set(value) {
-            prefs.edit().putInt(KEY_BUBBLE_Y, value).apply()
         }
 
     fun getWatchedPackages(): Set<String> =

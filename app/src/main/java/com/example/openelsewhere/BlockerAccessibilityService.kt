@@ -30,9 +30,7 @@ class BlockerAccessibilityService : AccessibilityService() {
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var prefs: AppPreferences
 
-    /** True when the service has determined the user is in a browser activity of a watched app. */
     private var isBlockingActive = false
-    private var lastBrowserEventTime = 0L
 
     /**
      * Fires every 1s while [isBlockingActive] is true.
@@ -151,7 +149,6 @@ class BlockerAccessibilityService : AccessibilityService() {
         }
 
         if (!prefs.isWatched(packageName)) {
-            if (packageName == applicationContext.packageName) return
             isBlockingActive = false
             handler.removeCallbacks(blockEnforceRunnable)
             BlockActivity.finishIfShowing()
@@ -177,11 +174,9 @@ class BlockerAccessibilityService : AccessibilityService() {
         }
 
         if (isBrowserActivity) {
-            lastBrowserEventTime = System.currentTimeMillis()
             prefs.logBlockedActivity(packageName, className)
             if (!isBlockingActive) {
                 isBlockingActive = true
-                performGlobalAction(GLOBAL_ACTION_BACK)
                 handler.removeCallbacks(blockEnforceRunnable)
                 handler.post(blockEnforceRunnable)
             }
@@ -189,12 +184,9 @@ class BlockerAccessibilityService : AccessibilityService() {
             handler.postDelayed(usageStatsCheckRunnable, 2_000L)
         } else {
             if (isBlockingActive) {
-                val msSinceLastBrowser = System.currentTimeMillis() - lastBrowserEventTime
-                if (msSinceLastBrowser > 500L) {
-                    isBlockingActive = false
-                    handler.removeCallbacks(blockEnforceRunnable)
-                    BlockActivity.finishIfShowing()
-                }
+                isBlockingActive = false
+                handler.removeCallbacks(blockEnforceRunnable)
+                BlockActivity.finishIfShowing()
             }
             handler.removeCallbacks(usageStatsCheckRunnable)
         }

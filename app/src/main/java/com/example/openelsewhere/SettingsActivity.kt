@@ -3,16 +3,10 @@ package com.example.openelsewhere
 import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
 import android.provider.Settings
 import android.text.TextUtils
 import android.widget.TextView
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.pm.PackageManager
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -45,27 +39,6 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.btn_accessibility_settings).setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
-        findViewById<MaterialButton>(R.id.btn_shortcut_settings).setOnClickListener {
-            val componentName = ComponentName(this, BlockerAccessibilityService::class.java)
-                .flattenToString()
-            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
-                val args = Bundle()
-                args.putString(":settings:fragment_args_key", componentName)
-                putExtra(":settings:show_fragment_args", args)
-                putExtra(":settings:fragment_args_key", componentName)
-            }
-            startActivity(intent)
-        }
-        findViewById<MaterialButton>(R.id.btn_notification_settings).setOnClickListener {
-            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-        }
-        findViewById<MaterialButton>(R.id.btn_battery_opt).setOnClickListener {
-            val intent = Intent(
-                Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                Uri.parse("package:$packageName")
-            )
-            startActivity(intent)
-        }
         findViewById<MaterialButton>(R.id.btn_overlay_settings).setOnClickListener {
             startActivity(
                 Intent(
@@ -77,52 +50,11 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.btn_usage_settings).setOnClickListener {
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         }
-        findViewById<TextView>(R.id.tv_protected_apps_desc).text = getOemDescriptionString()
-        findViewById<MaterialButton>(R.id.btn_protected_apps).setOnClickListener {
-            val oemIntent = getOemProtectedAppsIntent()
-            if (oemIntent != null) {
-                startActivity(oemIntent)
-            } else {
-                startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-            }
-        }
-
         findViewById<SwitchMaterial>(R.id.switch_debug_mode).apply {
             isChecked = prefs.isDebugMode
             setOnCheckedChangeListener { _, isChecked ->
                 prefs.isDebugMode = isChecked
             }
-        }
-        findViewById<SwitchMaterial>(R.id.switch_ubs_screen).apply {
-            isChecked = prefs.isUltraBatterySaverScreenEnabled
-            setOnCheckedChangeListener { _, isChecked ->
-                prefs.isUltraBatterySaverScreenEnabled = isChecked
-            }
-        }
-        findViewById<SwitchMaterial>(R.id.switch_hardcore_mode).apply {
-            isChecked = prefs.isHardcoreMode
-            setOnCheckedChangeListener { _, isChecked ->
-                prefs.isHardcoreMode = isChecked
-            }
-        }
-        findViewById<SwitchMaterial>(R.id.switch_persistent_notification).apply {
-            isChecked = prefs.isPersistentNotificationEnabled
-            setOnCheckedChangeListener { _, isChecked ->
-                prefs.isPersistentNotificationEnabled = isChecked
-            }
-        }
-        findViewById<SwitchMaterial>(R.id.switch_floating_bubble).apply {
-            isChecked = prefs.isFloatingBubbleEnabled
-            setOnCheckedChangeListener { _, isChecked ->
-                prefs.isFloatingBubbleEnabled = isChecked
-            }
-        }
-
-        findViewById<MaterialButton>(R.id.btn_copy_adb_command).setOnClickListener {
-            val cmd = "adb shell pm grant $packageName android.permission.WRITE_SECURE_SETTINGS"
-            val clipboard = getSystemService(ClipboardManager::class.java)
-            clipboard.setPrimaryClip(ClipData.newPlainText("ADB Command", cmd))
-            Toast.makeText(this, getString(R.string.adb_command_copied), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -132,166 +64,27 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun updateStatuses() {
-        val serviceEnabled = isAccessibilityServiceEnabled()
-        val overlayGranted = Settings.canDrawOverlays(this)
-        val usageGranted = UsageStatsHelper.hasPermission(this)
-
         setStatus(
             R.id.tv_accessibility_status,
-            serviceEnabled,
+            isAccessibilityServiceEnabled(),
             R.string.status_active,
             R.string.status_inactive,
             required = true
         )
         setStatus(
             R.id.tv_overlay_status,
-            overlayGranted,
+            Settings.canDrawOverlays(this),
             R.string.status_granted,
             R.string.status_not_granted,
             required = true
         )
         setStatus(
             R.id.tv_usage_status,
-            usageGranted,
+            UsageStatsHelper.hasPermission(this),
             R.string.status_granted,
             R.string.status_not_granted,
             required = false
         )
-        val shortcutEnabled = isAccessibilityShortcutEnabled()
-        setStatus(
-            R.id.tv_shortcut_status,
-            shortcutEnabled,
-            R.string.status_active,
-            R.string.status_inactive,
-            required = false
-        )
-        val notificationEnabled = isNotificationListenerEnabled()
-        setStatus(
-            R.id.tv_notification_access_status,
-            notificationEnabled,
-            R.string.status_enabled,
-            R.string.status_disabled,
-            required = false
-        )
-        val batteryExempted = isBatteryOptimizationExempted()
-        setStatus(
-            R.id.tv_battery_opt_status,
-            batteryExempted,
-            R.string.status_exempted,
-            R.string.status_not_exempted,
-            required = false
-        )
-        val hasWriteSecure = checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED
-        setStatus(
-            R.id.tv_write_secure_status,
-            hasWriteSecure,
-            R.string.status_granted,
-            R.string.status_not_granted,
-            required = false
-        )
-    }
-
-    private fun isBatteryOptimizationExempted(): Boolean {
-        val pm = getSystemService(PowerManager::class.java)
-        return pm.isIgnoringBatteryOptimizations(packageName)
-    }
-
-    private fun isNotificationListenerEnabled(): Boolean {
-        val listeners = Settings.Secure.getString(
-            contentResolver,
-            "enabled_notification_listeners"
-        ) ?: return false
-        return listeners.split(":").any {
-            ComponentName.unflattenFromString(it)?.packageName == packageName
-        }
-    }
-
-    private fun getOemProtectedAppsIntent(): Intent? {
-        val manufacturer = Build.MANUFACTURER.lowercase()
-        val intents = when {
-            manufacturer.contains("huawei") || manufacturer.contains("honor") -> listOf(
-                Intent().setClassName(
-                    "com.huawei.systemmanager",
-                    "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"
-                ),
-                Intent().setClassName(
-                    "com.huawei.systemmanager",
-                    "com.huawei.systemmanager.appcontrol.activity.StartupAppControlActivity"
-                )
-            )
-            manufacturer.contains("xiaomi") || manufacturer.contains("redmi") || manufacturer.contains("poco") -> listOf(
-                Intent().setClassName(
-                    "com.miui.securitycenter",
-                    "com.miui.permcenter.autostart.AutoStartManagementActivity"
-                )
-            )
-            manufacturer.contains("oppo") || manufacturer.contains("realme") || manufacturer.contains("oneplus") -> listOf(
-                Intent().setClassName(
-                    "com.coloros.safecenter",
-                    "com.coloros.privacypermissionsentry.PermissionTopActivity"
-                ),
-                Intent().setClassName(
-                    "com.oppo.safe",
-                    "com.coloros.safecenter.permission.startup.StartupAppListActivity"
-                )
-            )
-            manufacturer.contains("vivo") -> listOf(
-                Intent().setClassName(
-                    "com.vivo.permissionmanager",
-                    "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"
-                )
-            )
-            manufacturer.contains("samsung") -> listOf(
-                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-            )
-            else -> emptyList()
-        }
-        return intents.firstOrNull { intent ->
-            intent.component?.let { cn ->
-                packageManager.resolveActivity(
-                    Intent().setClassName(cn.packageName, cn.className),
-                    0
-                ) != null
-            } ?: (packageManager.resolveActivity(intent, 0) != null)
-        }
-    }
-
-    private fun getOemDescriptionString(): String {
-        val manufacturer = Build.MANUFACTURER.lowercase()
-        return when {
-            manufacturer.contains("huawei") || manufacturer.contains("honor") ->
-                getString(R.string.desc_protected_apps_huawei)
-            manufacturer.contains("xiaomi") || manufacturer.contains("redmi") || manufacturer.contains("poco") ->
-                getString(R.string.desc_protected_apps_xiaomi)
-            manufacturer.contains("oppo") || manufacturer.contains("realme") || manufacturer.contains("oneplus") ->
-                getString(R.string.desc_protected_apps_oppo)
-            manufacturer.contains("vivo") ->
-                getString(R.string.desc_protected_apps_vivo)
-            manufacturer.contains("samsung") ->
-                getString(R.string.desc_protected_apps_samsung)
-            else ->
-                getString(R.string.desc_protected_apps_generic)
-        }
-    }
-
-    private fun isAccessibilityShortcutEnabled(): Boolean {
-        val ourComponent = ComponentName(this, BlockerAccessibilityService::class.java)
-            .flattenToString().lowercase()
-
-        fun String?.containsOurService(): Boolean {
-            if (isNullOrBlank()) return false
-            return split(":").any { it.trim().lowercase() == ourComponent }
-        }
-
-        val shortcutTarget = Settings.Secure.getString(
-            contentResolver,
-            "accessibility_shortcut_target_service"
-        )
-        val buttonTargets = Settings.Secure.getString(
-            contentResolver,
-            "accessibility_button_targets"
-        )
-        return shortcutTarget.containsOurService() || buttonTargets.containsOurService()
     }
 
     private fun setStatus(
