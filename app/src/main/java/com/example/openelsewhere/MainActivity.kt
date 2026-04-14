@@ -2,6 +2,7 @@ package com.example.openelsewhere
 
 import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -117,6 +118,9 @@ class MainActivity : AppCompatActivity() {
             updatePauseCard(!isChecked)
         }
         updatePauseCard(prefs.isPaused)
+        if (UsageStatsHelper.hasPermission(this) && Settings.canDrawOverlays(this)) {
+            ForegroundPollingService.start(this)
+        }
     }
 
     private fun loadApps() {
