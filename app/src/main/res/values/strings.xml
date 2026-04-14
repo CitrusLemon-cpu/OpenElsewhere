@@ -55,4 +55,12 @@
     <string name="btn_allow_activity">Allow</string>
     <string name="btn_reblock_activity">Re-block</string>
     <string name="btn_unblock_activity">Unblock</string>
+    <string name="notification_listener_label">OpenElsewhere Notification Access</string>
+    <string name="label_notification_access">Notification Access</string>
+    <string name="desc_notification_access">Keeps OpenElsewhere alive in ultra battery saver mode. Strongly recommended on Xiaomi/MIUI so the system cannot kill the blocker.</string>
+    <string name="btn_notification_access_settings">Open Notification Access</string>
+    <string name="label_miui_battery">MIUI Battery Settings</string>
+    <string name="desc_miui_battery">Enable Autostart so OpenElsewhere survives reboots and battery saver. Then set battery optimization to Unrestricted.</string>
+    <string name="btn_miui_autostart">Open Autostart Settings</string>
+    <string name="btn_miui_battery_optimization">Open Battery Optimization</string>
 </resources>

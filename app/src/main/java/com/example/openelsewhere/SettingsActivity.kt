@@ -3,6 +3,7 @@ package com.example.openelsewhere
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
@@ -10,6 +11,7 @@ import android.text.TextUtils
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.appbar.MaterialToolbar
@@ -69,6 +71,37 @@ class SettingsActivity : AppCompatActivity() {
                 startActivity(intent)
             }
         }
+        findViewById<MaterialButton>(R.id.btn_notification_access_settings).setOnClickListener {
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        }
+
+        findViewById<MaterialButton>(R.id.btn_miui_autostart).setOnClickListener {
+            try {
+                val intent = Intent().apply {
+                    setClassName(
+                        "com.miui.securitycenter",
+                        "com.miui.permcenter.autostart.AutoStartManagementActivity"
+                    )
+                }
+                packageManager.getActivityInfo(intent.component!!, PackageManager.MATCH_DEFAULT_ONLY)
+                startActivity(intent)
+            } catch (_: Exception) {
+                // MIUI autostart screen not available — fall back to app info
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:$packageName")
+                })
+            }
+        }
+
+        findViewById<MaterialButton>(R.id.btn_miui_battery_optimization).setOnClickListener {
+            try {
+                startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            } catch (_: Exception) {
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:$packageName")
+                })
+            }
+        }
         findViewById<SwitchMaterial>(R.id.switch_debug_mode).apply {
             isChecked = prefs.isDebugMode
             setOnCheckedChangeListener { _, isChecked ->
@@ -100,6 +133,13 @@ class SettingsActivity : AppCompatActivity() {
         setStatus(
             R.id.tv_usage_status,
             UsageStatsHelper.hasPermission(this),
+            R.string.status_granted,
+            R.string.status_not_granted,
+            required = false
+        )
+        setStatus(
+            R.id.tv_notification_access_status,
+            NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName),
             R.string.status_granted,
             R.string.status_not_granted,
             required = false
