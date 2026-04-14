@@ -105,6 +105,18 @@ class SettingsActivity : AppCompatActivity() {
                 prefs.isHardcoreMode = isChecked
             }
         }
+        findViewById<SwitchMaterial>(R.id.switch_persistent_notification).apply {
+            isChecked = prefs.isPersistentNotificationEnabled
+            setOnCheckedChangeListener { _, isChecked ->
+                prefs.isPersistentNotificationEnabled = isChecked
+            }
+        }
+        findViewById<SwitchMaterial>(R.id.switch_floating_bubble).apply {
+            isChecked = prefs.isFloatingBubbleEnabled
+            setOnCheckedChangeListener { _, isChecked ->
+                prefs.isFloatingBubbleEnabled = isChecked
+            }
+        }
 
         findViewById<MaterialButton>(R.id.btn_copy_adb_command).setOnClickListener {
             val cmd = "adb shell pm grant $packageName android.permission.WRITE_SECURE_SETTINGS"

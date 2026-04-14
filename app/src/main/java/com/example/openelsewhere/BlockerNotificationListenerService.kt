@@ -1,5 +1,8 @@
 package com.example.openelsewhere
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
@@ -15,8 +18,14 @@ import android.provider.Settings
 import android.service.notification.NotificationListenerService
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import androidx.core.app.NotificationCompat
+import kotlin.math.abs
+
+private const val PERSISTENT_CHANNEL_ID = "open_elsewhere_persistent"
+private const val PERSISTENT_NOTIF_ID = 1001
 
 class BlockerNotificationListenerService : NotificationListenerService() {
 
@@ -27,6 +36,12 @@ class BlockerNotificationListenerService : NotificationListenerService() {
     private val handler = Handler(Looper.getMainLooper())
     private var overlayView: View? = null
     private var hardcoreOverlayView: View? = null
+    private var floatingBubbleView: View? = null
+    private var floatingBubbleParams: WindowManager.LayoutParams? = null
+    private var bubbleDragStartX = 0f
+    private var bubbleDragStartY = 0f
+    private var bubbleInitialX = 0
+    private var bubbleInitialY = 0
     private lateinit var windowManager: WindowManager
     private var receiverRegistered = false
     private var accessibilityObserverRegistered = false
@@ -65,6 +80,14 @@ class BlockerNotificationListenerService : NotificationListenerService() {
         super.onListenerConnected()
         instance = this
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val persistentChannel = NotificationChannel(
+            PERSISTENT_CHANNEL_ID,
+            "Persistent Status",
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            setShowBadge(false)
+        }
+        getSystemService(NotificationManager::class.java).createNotificationChannel(persistentChannel)
         AppPreferences.getInstance(this).registerListener(prefsListener)
         try {
             registerReceiver(powerSaveReceiver, IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED))
@@ -101,6 +124,8 @@ class BlockerNotificationListenerService : NotificationListenerService() {
     private fun cleanup() {
         handler.removeCallbacks(periodicCheckRunnable)
         periodicCheckScheduled = false
+        dismissPersistentNotification()
+        dismissFloatingBubble()
         handler.post { dismissOverlay() }
         handler.post { dismissHardcoreOverlay() }
         try {
@@ -184,6 +209,8 @@ class BlockerNotificationListenerService : NotificationListenerService() {
                 dismissOverlay()
             }
         }
+        updatePersistentNotification()
+        updateBubble()
     }
 
     private fun tryReEnableAccessibilityService() {
@@ -268,6 +295,122 @@ class BlockerNotificationListenerService : NotificationListenerService() {
             windowManager.addView(view, params)
             hardcoreOverlayView = view
         } catch (_: Exception) {}
+    }
+
+    private fun updatePersistentNotification() {
+        val prefs = AppPreferences.getInstance(this)
+        if (!prefs.isPersistentNotificationEnabled) {
+            dismissPersistentNotification()
+            return
+        }
+        val intent = Intent(this, SettingsActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val (title, text) = when {
+            prefs.isPaused -> "OpenElsewhere paused" to "Tap to manage settings"
+            BlockerAccessibilityService.instance != null ->
+                "OpenElsewhere active" to "Monitoring ${prefs.getWatchedPackages().size} apps"
+            else -> "⚠️ Monitoring disabled" to "Accessibility service is off — tap to fix"
+        }
+        val notification = NotificationCompat.Builder(this, PERSISTENT_CHANNEL_ID)
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentIntent(pendingIntent)
+            .setContentTitle(title)
+            .setContentText(text)
+            .build()
+        getSystemService(NotificationManager::class.java).notify(PERSISTENT_NOTIF_ID, notification)
+    }
+
+    private fun dismissPersistentNotification() {
+        getSystemService(NotificationManager::class.java).cancel(PERSISTENT_NOTIF_ID)
+    }
+
+    private fun updateBubble() {
+        val prefs = AppPreferences.getInstance(this)
+        if (prefs.isFloatingBubbleEnabled && Settings.canDrawOverlays(this)) {
+            showFloatingBubble()
+        } else {
+            dismissFloatingBubble()
+        }
+    }
+
+    private fun showFloatingBubble() {
+        if (floatingBubbleView != null) return
+        val prefs = AppPreferences.getInstance(this)
+        val view = LayoutInflater.from(this).inflate(R.layout.overlay_floating_bubble, null)
+        view.alpha = 0.85f
+
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            x = prefs.floatingBubbleX.let { if (it == -1) 900 else it }
+            y = prefs.floatingBubbleY
+        }
+
+        view.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    bubbleDragStartX = event.rawX
+                    bubbleDragStartY = event.rawY
+                    bubbleInitialX = params.x
+                    bubbleInitialY = params.y
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    val deltaX = (event.rawX - bubbleDragStartX).toInt()
+                    val deltaY = (event.rawY - bubbleDragStartY).toInt()
+                    params.x = bubbleInitialX + deltaX
+                    params.y = bubbleInitialY + deltaY
+                    try {
+                        windowManager.updateViewLayout(view, params)
+                    } catch (_: Exception) {}
+                }
+
+                MotionEvent.ACTION_UP -> {
+                    if (abs(event.rawX - bubbleDragStartX) < 15f && abs(event.rawY - bubbleDragStartY) < 15f) {
+                        val intent = Intent(this, SettingsActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        try {
+                            startActivity(intent)
+                        } catch (_: Exception) {}
+                    }
+                    prefs.floatingBubbleX = params.x
+                    prefs.floatingBubbleY = params.y
+                }
+            }
+            true
+        }
+
+        try {
+            windowManager.addView(view, params)
+            floatingBubbleView = view
+            floatingBubbleParams = params
+        } catch (_: Exception) {}
+    }
+
+    private fun dismissFloatingBubble() {
+        val view = floatingBubbleView ?: return
+        try {
+            windowManager.removeView(view)
+        } catch (_: Exception) {}
+        floatingBubbleView = null
+        floatingBubbleParams = null
     }
 
     private fun navigateToHomeScreen() {

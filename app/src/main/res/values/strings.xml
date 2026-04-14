@@ -59,6 +59,10 @@
     <string name="desc_ubs_screen">Shows a full-screen block when Ultra Battery Saver kills app monitoring.</string>
     <string name="label_hardcore_mode">Hardcore Mode</string>
     <string name="desc_hardcore_mode">Blocks all apps immediately if accessibility monitoring is disabled. Requires Notification Access. Cannot be bypassed without re-enabling the service.</string>
+    <string name="label_persistent_notification">Persistent Notification</string>
+    <string name="desc_persistent_notification">Shows an ongoing notification so battery savers know the app needs to stay running. Tap the notification to open settings.</string>
+    <string name="label_floating_bubble">Floating Star Bubble</string>
+    <string name="desc_floating_bubble">A small ⭐ that floats above all apps. Drag to reposition. Tap to open settings. Helps you know the app is alive at a glance.</string>
     <string name="overlay_hardcore_title">Monitoring Disabled</string>
     <string name="overlay_hardcore_subtitle">Re-enable the OpenElsewhere accessibility service to continue using your phone.</string>
     <string name="overlay_hardcore_btn">Open Accessibility Settings</string>
