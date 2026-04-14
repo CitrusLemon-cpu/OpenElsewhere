@@ -112,6 +112,9 @@ class SettingsActivity : AppCompatActivity() {
             R.string.status_inactive,
             required = false
         )
+        findViewById<MaterialButton>(R.id.btn_device_admin).text =
+            if (deviceAdminActive) getString(R.string.btn_device_admin_active)
+            else getString(R.string.btn_device_admin)
     }
 
     private fun setStatus(
