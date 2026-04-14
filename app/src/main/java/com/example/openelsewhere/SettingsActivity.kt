@@ -1,5 +1,6 @@
 package com.example.openelsewhere
 
+import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
@@ -18,12 +19,16 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var prefs: AppPreferences
+    private lateinit var dpm: DevicePolicyManager
+    private lateinit var deviceAdminComponent: ComponentName
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_settings)
         prefs = AppPreferences.getInstance(this)
+        dpm = getSystemService(DevicePolicyManager::class.java)
+        deviceAdminComponent = ComponentName(this, OpenElsewhereDeviceAdmin::class.java)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.settings_root)) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -49,6 +54,20 @@ class SettingsActivity : AppCompatActivity() {
         }
         findViewById<MaterialButton>(R.id.btn_usage_settings).setOnClickListener {
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        }
+        findViewById<MaterialButton>(R.id.btn_device_admin).setOnClickListener {
+            if (dpm.isAdminActive(deviceAdminComponent)) {
+                startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
+            } else {
+                val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+                    putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, deviceAdminComponent)
+                    putExtra(
+                        DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                        getString(R.string.device_admin_explanation)
+                    )
+                }
+                startActivity(intent)
+            }
         }
         findViewById<SwitchMaterial>(R.id.switch_debug_mode).apply {
             isChecked = prefs.isDebugMode
@@ -85,6 +104,17 @@ class SettingsActivity : AppCompatActivity() {
             R.string.status_not_granted,
             required = false
         )
+        val deviceAdminActive = dpm.isAdminActive(deviceAdminComponent)
+        setStatus(
+            R.id.tv_device_admin_status,
+            deviceAdminActive,
+            R.string.status_active,
+            R.string.status_inactive,
+            required = false
+        )
+        findViewById<MaterialButton>(R.id.btn_device_admin).text =
+            if (deviceAdminActive) getString(R.string.btn_device_admin_active)
+            else getString(R.string.btn_device_admin)
     }
 
     private fun setStatus(

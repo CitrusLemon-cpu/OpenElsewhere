@@ -19,6 +19,12 @@
     <string name="label_usage">Usage Access (Optional)</string>
     <string name="desc_usage">Secondary signal for detecting app switches</string>
     <string name="btn_usage_settings">Open Usage Access Settings</string>
+    <string name="label_device_admin">Device Admin</string>
+    <string name="desc_device_admin">Prevents uninstalling OpenElsewhere without revoking admin rights first. Also gives elevated priority on Xiaomi/MIUI devices so the system is less likely to kill it.</string>
+    <string name="btn_device_admin">Enable Device Admin</string>
+    <string name="btn_device_admin_active">View in Security Settings</string>
+    <string name="device_admin_explanation">Enabling Device Admin prevents OpenElsewhere from being uninstalled without first going through extra steps. This is what keeps the blocker tamper-resistant.</string>
+    <string name="device_admin_disable_warning">If you disable Device Admin, OpenElsewhere can be uninstalled and your blocking rules will no longer be enforced.</string>
     <string name="label_debug_mode">Debug Mode</string>
     <string name="desc_debug_mode">Show notifications with activity class names</string>
     <string name="overlay_title">In-app browser blocked</string>
