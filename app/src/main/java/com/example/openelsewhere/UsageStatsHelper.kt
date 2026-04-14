@@ -1,8 +1,10 @@
 package com.example.openelsewhere
 
 import android.app.AppOpsManager
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
+import android.os.Build
 import android.os.Process
 
 /**
@@ -37,5 +39,31 @@ object UsageStatsHelper {
         val stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, now - 5_000L, now)
             ?: return null
         return stats.maxByOrNull { it.lastTimeUsed }?.packageName
+    }
+
+    /**
+     * Returns the package that most recently moved to the foreground within the last 2 seconds,
+     * or null if none found or permission not granted.
+     *
+     * Uses queryEvents() which reflects transitions in near-real-time, unlike
+     * queryUsageStats() which has coarser granularity.
+     */
+    fun getForegroundPackageViaEvents(context: Context): String? {
+        if (!hasPermission(context)) return null
+        val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val now = System.currentTimeMillis()
+        val events = usm.queryEvents(now - 2_000L, now)
+        val event = UsageEvents.Event()
+        var lastForegroundPkg: String? = null
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND ||
+                (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                    event.eventType == UsageEvents.Event.ACTIVITY_RESUMED)
+            ) {
+                lastForegroundPkg = event.packageName
+            }
+        }
+        return lastForegroundPkg
     }
 }
