@@ -4,6 +4,7 @@ import android.app.AppOpsManager
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
+import android.os.Build
 import android.os.Process
 
 /**
@@ -56,7 +57,10 @@ object UsageStatsHelper {
         var lastForegroundPkg: String? = null
         while (events.hasNextEvent()) {
             events.getNextEvent(event)
-            if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND) {
+            if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND ||
+                (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                    event.eventType == UsageEvents.Event.ACTIVITY_RESUMED)
+            ) {
                 lastForegroundPkg = event.packageName
             }
         }
