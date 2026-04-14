@@ -124,8 +124,8 @@ class BlockerNotificationListenerService : NotificationListenerService() {
     private fun cleanup() {
         handler.removeCallbacks(periodicCheckRunnable)
         periodicCheckScheduled = false
-        dismissPersistentNotification()
-        dismissFloatingBubble()
+        handler.post { dismissPersistentNotification() }
+        handler.post { dismissFloatingBubble() }
         handler.post { dismissOverlay() }
         handler.post { dismissHardcoreOverlay() }
         try {
@@ -358,7 +358,18 @@ class BlockerNotificationListenerService : NotificationListenerService() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = prefs.floatingBubbleX.let { if (it == -1) 900 else it }
+            x = prefs.floatingBubbleX.let { if (it == -1) {
+                val defaultX = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                    (windowManager.currentWindowMetrics.bounds.width() - 160).coerceAtLeast(0)
+                } else {
+                    @Suppress("DEPRECATION")
+                    val size = android.graphics.Point()
+                    @Suppress("DEPRECATION")
+                    windowManager.defaultDisplay.getSize(size)
+                    (size.x - 160).coerceAtLeast(0)
+                }
+                defaultX
+            } else it }
             y = prefs.floatingBubbleY
         }
 
